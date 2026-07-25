@@ -683,6 +683,52 @@
       transform: translateY(0);
     }
 
+    .voice-note {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fbfcfc;
+    }
+
+    .voice-note[data-state="recording"] {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .voice-note[data-state="recorded"] {
+      border-color: #b9dfcd;
+      background: #f1faf5;
+    }
+
+    .voice-note[data-state="error"] {
+      border-color: #e7b6b2;
+      background: #fff5f4;
+    }
+
+    .voice-note-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .voice-note .button {
+      min-height: 34px;
+      padding: 6px 10px;
+    }
+
+    .voice-note-status,
+    .voice-note-meta {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .voice-note audio {
+      width: min(100%, 360px);
+    }
+
     @media (max-width: 960px) {
       .workspace {
         grid-template-columns: 1fr;
@@ -760,7 +806,8 @@
       .eyebrow,
       .sidebar,
       .footer-note,
-      .toast {
+      .toast,
+      .voice-note {
         display: none !important;
       }
 
@@ -821,12 +868,15 @@
           <div class="progress-bar" id="progressBar"></div>
         </div>
         <p class="autosave-note" id="saveStatus">
-          Ответы автоматически сохраняются только в этом браузере.
+          Ответы и голосовые заметки сохраняются только в этом браузере. Скачайте ZIP до очистки данных браузера.
         </p>
       </div>
       <nav class="tabs" id="tabs" role="tablist" aria-orientation="vertical"></nav>
       <div class="sidebar-actions">
-        <button class="button button-primary" id="exportButton" type="button">
+        <button class="button button-primary" id="archiveButton" type="button">
+          Скачать архив для разработчика
+        </button>
+        <button class="button button-secondary" id="exportButton" type="button">
           Скачать ответы .md
         </button>
         <button class="button button-secondary" id="printButton" type="button">
@@ -842,11 +892,12 @@
   </main>
 
   <p class="footer-note">
-    Автономный документ: данные не отправляются в интернет и остаются в браузере
-    на этом устройстве.
+    Автономный документ: данные и голосовые заметки не отправляются в интернет и остаются в браузере
+    на этом устройстве. Скачайте ZIP до очистки данных браузера.
   </p>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <script src="questionnaire-support.js"></script>
   <script>
     const sections = [
       {
@@ -1278,6 +1329,10 @@
     const progressBar = document.getElementById("progressBar");
     const saveStatus = document.getElementById("saveStatus");
     const toast = document.getElementById("toast");
+    const recordingStore = AutomanQuestionnaireSupport.createRecordingStore();
+    const recordingGate = AutomanQuestionnaireSupport.createRecordingGate();
+    const audioUrls = new Map();
+    let activeRecording;
     let saveTimer;
 
     const packageRules = {
@@ -1458,6 +1513,29 @@
         </div>`;
     }
 
+    function voicePanelMarkup(field) {
+      return `
+        <div class="voice-note" data-voice-field="${escapeHtml(field.id)}" data-state="idle">
+          <div class="voice-note-actions" role="group" aria-label="Голосовая заметка к полю «${escapeHtml(field.dataset.question)}»">
+            <button class="button button-secondary" type="button" data-voice-action="record">Записать голосом</button>
+            <button class="button button-secondary" type="button" data-voice-action="stop" hidden>Остановить</button>
+            <button class="button button-danger" type="button" data-voice-action="cancel" hidden>Отменить</button>
+            <button class="button button-secondary" type="button" data-voice-action="replace" hidden>Заменить</button>
+            <button class="button button-danger" type="button" data-voice-action="delete" hidden>Удалить</button>
+          </div>
+          <span class="voice-note-status" aria-live="polite">Голосовой заметки нет.</span>
+          <div class="voice-note-player"></div>
+          <span class="voice-note-meta"></span>
+        </div>`;
+    }
+
+    function addVoicePanels() {
+      document.querySelectorAll('textarea[data-field]').forEach(field => {
+        if (!AutomanQuestionnaireSupport.isAudioField(field)) return;
+        field.insertAdjacentHTML('afterend', voicePanelMarkup(field));
+      });
+    }
+
     function blockMarkup(section, block, index) {
       if (block.type === "intro") {
         return `<article class="card"><h3>${escapeHtml(block.title)}</h3><p class="card-intro">${escapeHtml(block.body)}</p></article>`;
@@ -1627,6 +1705,7 @@
           </div>
           ${section.blocks.map((block, blockIndex) => blockMarkup(section, block, blockIndex)).join("")}
         </section>`).join("");
+      addVoicePanels();
     }
 
     function activateTab(id, focus = false) {
@@ -1712,7 +1791,8 @@
       updateAutoChecklist();
     }
 
-    function markdownAnswers() {
+    function markdownAnswers(recordingMetadata = []) {
+      const recordingsByFieldId = new Map(recordingMetadata.map(recording => [recording.fieldId, recording]));
       const lines = [
         "# Заполненные данные для AI-консультанта автосервиса АКПП",
         "",
@@ -1724,7 +1804,7 @@
 
       sections.forEach(section => {
         const fields = [...document.querySelectorAll(`[data-section="${section.id}"]`)];
-        const completedFields = fields.filter(isComplete);
+        const completedFields = fields.filter(field => isComplete(field) || recordingsByFieldId.has(field.id));
         if (!completedFields.length) return;
         lines.push(`## ${section.title}`, "");
         completedFields.forEach(field => {
@@ -1735,7 +1815,10 @@
             .split("\n")
             .map(line => `    ${line}`)
             .join("\n");
-          lines.push(`### ${field.dataset.question}`, "", safeAnswer, "");
+          lines.push(`### ${field.dataset.question}`, "", safeAnswer);
+          const recording = recordingsByFieldId.get(field.id);
+          if (recording) lines.push(`Голосовая заметка: ${recording.file}`);
+          lines.push("");
         });
       });
 
@@ -1775,17 +1858,289 @@
       showToast("Заполненные ответы выгружены в Markdown.");
     }
 
+    async function downloadArchive() {
+      saveState();
+      const missingRequired = [...document.querySelectorAll('[data-required="true"]')]
+        .filter(field => !isComplete(field));
+      if (missingRequired.length) {
+        const proceed = window.confirm(
+          `Не заполнено важных полей: ${missingRequired.length}. Выгрузить только имеющиеся ответы?`
+        );
+        if (!proceed) return;
+      }
+      try {
+        const recordings = [...await recordingStore.list()]
+          .sort((left, right) => left.fieldId.localeCompare(right.fieldId));
+        const recordingMetadata = AutomanQuestionnaireSupport.buildVoiceManifest(recordings);
+        const recordingsByFieldId = new Map(recordings.map(recording => [recording.fieldId, recording]));
+        const voiceEntries = await Promise.all(recordingMetadata.map(async metadata => ({
+          name: metadata.file,
+          data: new Uint8Array(await recordingsByFieldId.get(metadata.fieldId).blob.arrayBuffer())
+        })));
+        const readmeLines = [
+          "Экспорт анкеты Automan создан локально в этом браузере.",
+          "Текстовые ответы находятся в answers.md и answers.json.",
+          "Голосовые заметки находятся в папке voice/.",
+          "",
+          "Файлы голосовых заметок:"
+        ];
+        recordingMetadata.forEach(metadata => readmeLines.push(`- ${metadata.file} — ${metadata.question}`));
+        const archive = AutomanQuestionnaireSupport.buildArchive([
+          { name: "README.txt", data: `${readmeLines.join("\n")}\n` },
+          { name: "answers.md", data: markdownAnswers(recordingMetadata) },
+          {
+            name: "answers.json",
+            data: AutomanQuestionnaireSupport.buildExportJson(collectState(), recordingMetadata, new Date().toISOString())
+          },
+          { name: "voice/", data: new Uint8Array() },
+          ...voiceEntries
+        ]);
+        const url = URL.createObjectURL(archive);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `automan-anketa-${new Date().toISOString().slice(0, 10)}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        showToast("Архив для разработчика скачан.");
+      } catch {
+        showToast("Не удалось собрать архив. Данные остались в этом браузере; повторите попытку.");
+      }
+    }
+
     function showToast(message) {
       toast.textContent = message;
       toast.classList.add("visible");
       setTimeout(() => toast.classList.remove("visible"), 2600);
     }
 
-    function resetAnswers() {
+    function formatVoiceMeta(record) {
+      const seconds = Math.max(0, Math.round(record.durationSeconds || 0));
+      const minutes = Math.floor(seconds / 60);
+      return `${minutes}:${String(seconds % 60).padStart(2, "0")} · ${(record.sizeBytes / 1024 / 1024).toFixed(1)} МБ`;
+    }
+
+    function setVoicePanel(panel, record) {
+      const fieldId = panel.dataset.voiceField;
+      const previousUrl = audioUrls.get(fieldId);
+      if (previousUrl) URL.revokeObjectURL(previousUrl);
+      const url = URL.createObjectURL(record.blob);
+      audioUrls.set(fieldId, url);
+      panel.dataset.state = "recorded";
+      panel.querySelector(".voice-note-status").textContent = "Голосовая заметка сохранена в этом браузере.";
+      panel.querySelector(".voice-note-player").innerHTML = `<audio controls src="${url}"></audio>`;
+      panel.querySelector(".voice-note-meta").textContent = formatVoiceMeta(record);
+      panel.querySelector('[data-voice-action="record"]').hidden = true;
+      panel.querySelector('[data-voice-action="stop"]').hidden = true;
+      panel.querySelector('[data-voice-action="cancel"]').hidden = true;
+      panel.querySelector('[data-voice-action="replace"]').hidden = false;
+      panel.querySelector('[data-voice-action="delete"]').hidden = false;
+    }
+
+    function setVoiceIdle(panel, message = "Голосовой заметки нет.") {
+      const fieldId = panel.dataset.voiceField;
+      const previousUrl = audioUrls.get(fieldId);
+      if (previousUrl) URL.revokeObjectURL(previousUrl);
+      audioUrls.delete(fieldId);
+      panel.dataset.state = "idle";
+      panel.querySelector(".voice-note-status").textContent = message;
+      panel.querySelector(".voice-note-player").replaceChildren();
+      panel.querySelector(".voice-note-meta").textContent = "";
+      panel.querySelector('[data-voice-action="record"]').hidden = false;
+      panel.querySelector('[data-voice-action="stop"]').hidden = true;
+      panel.querySelector('[data-voice-action="cancel"]').hidden = true;
+      panel.querySelector('[data-voice-action="replace"]').hidden = true;
+      panel.querySelector('[data-voice-action="delete"]').hidden = true;
+    }
+
+    function setVoiceError(panel, message) {
+      setVoiceIdle(panel, message);
+      panel.dataset.state = "error";
+    }
+
+    function voiceDuration(blob) {
+      return new Promise(resolve => {
+        const audio = document.createElement("audio");
+        const url = URL.createObjectURL(blob);
+        audio.onloadedmetadata = () => {
+          URL.revokeObjectURL(url);
+          resolve(Number.isFinite(audio.duration) ? audio.duration : 0);
+        };
+        audio.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(0);
+        };
+        audio.src = url;
+      });
+    }
+
+    function stopTracks(stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+
+    function clearRecordingTimers(session) {
+      clearTimeout(session.timer);
+      clearInterval(session.elapsedTimer);
+    }
+
+    function updateRecordingElapsed(session) {
+      if (activeRecording !== session || session.recorder?.state !== "recording") return;
+      const elapsedSeconds = Math.min(180, Math.floor((Date.now() - session.startedAt) / 1000));
+      const minutes = Math.floor(elapsedSeconds / 60);
+      const seconds = String(elapsedSeconds % 60).padStart(2, "0");
+      session.panel.querySelector(".voice-note-status").textContent =
+        `Идёт запись: ${minutes}:${seconds}. Максимальная длительность — 3 минуты.`;
+    }
+
+    function settleRecording(session) {
+      clearRecordingTimers(session);
+      if (activeRecording === session) activeRecording = undefined;
+      recordingGate.release();
+      session.resolveCleanup();
+    }
+
+    async function finishRecording(session) {
+      if (session.finishing) return;
+      session.finishing = true;
+      clearRecordingTimers(session);
+      stopTracks(session.stream);
+      if (session.terminalError) {
+        setVoiceError(session.panel, session.terminalError);
+        settleRecording(session);
+        return;
+      }
+      if (session.discard) {
+        if (session.previousRecord) setVoicePanel(session.panel, session.previousRecord);
+        else setVoiceIdle(session.panel, "Запись отменена.");
+        settleRecording(session);
+        return;
+      }
+      const blob = new Blob(session.chunks, { type: session.recorder.mimeType || session.mimeType || "audio/webm" });
+      if (blob.size > 25 * 1024 * 1024) {
+        setVoiceError(session.panel, "Голосовая заметка больше 25 МБ и не была сохранена.");
+        settleRecording(session);
+        return;
+      }
+      try {
+        const record = {
+          fieldId: session.field.id,
+          question: session.field.dataset.question,
+          blob,
+          mimeType: blob.type,
+          extension: AutomanQuestionnaireSupport.audioExtensionForMime(blob.type),
+          sizeBytes: blob.size,
+          durationSeconds: await voiceDuration(blob),
+          createdAt: new Date().toISOString()
+        };
+        await recordingStore.put(record);
+        setVoicePanel(session.panel, record);
+      } catch {
+        setVoiceError(session.panel, "Не удалось сохранить голосовую заметку в хранилище браузера.");
+      } finally {
+        settleRecording(session);
+      }
+    }
+
+    async function startRecording(panel, replacing = false) {
+      if (!recordingGate.reserve()) {
+        setVoiceError(panel, "Сначала остановите текущую запись.");
+        return;
+      }
+      let resolveCleanup;
+      const session = {
+        panel, replacing, discard: false, pending: true,
+        cleanup: new Promise(resolve => { resolveCleanup = resolve; }),
+        resolveCleanup
+      };
+      activeRecording = session;
+      if (!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder)) {
+        setVoiceError(panel, "Ваш браузер не поддерживает запись голосовых заметок.");
+        settleRecording(session);
+        return;
+      }
+      let stream;
+      try {
+        const previousRecord = replacing ? await recordingStore.get(panel.dataset.voiceField) : undefined;
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (activeRecording !== session || session.discard) {
+          stopTracks(stream);
+          return;
+        }
+        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "";
+        const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        const field = getField(panel.dataset.voiceField);
+        Object.assign(session, { field, stream, recorder, mimeType, chunks: [], previousRecord, pending: false });
+        recorder.ondataavailable = event => { if (event.data.size) session.chunks.push(event.data); };
+        recorder.onstop = () => { finishRecording(session); };
+        recorder.onerror = () => {
+          session.discard = true;
+          session.terminalError = "Не удалось записать голосовую заметку.";
+          clearRecordingTimers(session);
+          stopTracks(session.stream);
+          if (recorder.state !== "inactive") recorder.stop();
+          else finishRecording(session);
+        };
+        recorder.start();
+        session.startedAt = Date.now();
+        session.timer = setTimeout(() => {
+          clearInterval(session.elapsedTimer);
+          panel.querySelector(".voice-note-status").textContent = "Достигнут лимит записи 3 минуты. Сохраняю заметку…";
+          recorder.stop();
+        }, 180000);
+        panel.dataset.state = "recording";
+        updateRecordingElapsed(session);
+        session.elapsedTimer = setInterval(() => updateRecordingElapsed(session), 1000);
+        panel.querySelector('[data-voice-action="record"]').hidden = true;
+        panel.querySelector('[data-voice-action="stop"]').hidden = false;
+        panel.querySelector('[data-voice-action="cancel"]').hidden = false;
+        panel.querySelector('[data-voice-action="replace"]').hidden = true;
+        panel.querySelector('[data-voice-action="delete"]').hidden = true;
+      } catch (error) {
+        if (stream) stopTracks(stream);
+        if (activeRecording !== session) return;
+        settleRecording(session);
+        const denied = error && ["NotAllowedError", "SecurityError"].includes(error.name);
+        setVoiceError(panel, denied
+          ? "Доступ к микрофону запрещён. Разрешите его в настройках браузера и повторите попытку."
+          : "Не удалось получить доступ к микрофону. Проверьте устройство и настройки браузера.");
+      }
+    }
+
+    function stopRecording(discard) {
+      const session = activeRecording;
+      if (!session) return Promise.resolve();
+      session.discard = discard;
+      clearRecordingTimers(session);
+      if (session.pending) {
+        settleRecording(session);
+      } else if (session.recorder.state !== "inactive") {
+        session.recorder.stop();
+      }
+      return session.cleanup;
+    }
+
+    async function restoreRecordings() {
+      try {
+        const records = await recordingStore.list();
+        records.forEach(record => {
+          const panel = [...document.querySelectorAll(".voice-note")]
+            .find(candidate => candidate.dataset.voiceField === record.fieldId);
+          if (panel) setVoicePanel(panel, record);
+        });
+      } catch {
+        document.querySelectorAll(".voice-note").forEach(panel => {
+          setVoiceError(panel, "Не удалось открыть хранилище голосовых заметок браузера.");
+        });
+      }
+    }
+
+    async function resetAnswers() {
       const confirmed = window.confirm(
         "Удалить все заполненные ответы из этого браузера? Отменить действие будет нельзя."
       );
       if (!confirmed) return;
+      await stopRecording(true);
       try {
         localStorage.removeItem(storageKey);
       } catch {
@@ -1795,6 +2150,15 @@
         if (field.type === "checkbox") field.checked = false;
         else field.value = "";
       });
+      try {
+        await recordingStore.clear();
+        document.querySelectorAll(".voice-note").forEach(panel => setVoiceIdle(panel));
+      } catch {
+        saveStatus.textContent = "Текстовые ответы очищены, но голосовые заметки не удалось удалить. Повторите попытку.";
+        updateProgress();
+        showToast("Текстовые ответы очищены, но голосовые заметки не удалось удалить. Повторите попытку.");
+        return;
+      }
       saveStatus.textContent = "Ответы очищены.";
       updateProgress();
       showToast("Все ответы удалены.");
@@ -1804,6 +2168,7 @@
     restoreState();
     applyWebsitePrefill();
     updateProgress();
+    restoreRecordings();
 
     tabs.addEventListener("click", event => {
       const tab = event.target.closest("[data-tab]");
@@ -1832,6 +2197,36 @@
 
     content.addEventListener("input", scheduleSave);
     content.addEventListener("change", scheduleSave);
+    content.addEventListener("click", async event => {
+      const action = event.target.closest("[data-voice-action]");
+      if (!action) return;
+      const panel = action.closest(".voice-note");
+      const fieldId = panel.dataset.voiceField;
+      const kind = action.dataset.voiceAction;
+      if (recordingGate.isReserved() && ["replace", "delete"].includes(kind)) {
+        showToast("Идёт запись голосовой заметки. Дождитесь её завершения.");
+        return;
+      }
+      if (kind === "record") {
+        await startRecording(panel);
+      } else if (kind === "stop") {
+        stopRecording(false);
+      } else if (kind === "cancel") {
+        stopRecording(true);
+      } else if (kind === "replace") {
+        if (window.confirm("Заменить существующую голосовую заметку? Текущая запись будет удалена после сохранения новой.")) {
+          await startRecording(panel, true);
+        }
+      } else if (kind === "delete") {
+        if (!window.confirm("Удалить голосовую заметку? Отменить действие будет нельзя.")) return;
+        try {
+          await recordingStore.delete(fieldId);
+          setVoiceIdle(panel, "Голосовая заметка удалена.");
+        } catch {
+          setVoiceError(panel, "Не удалось удалить голосовую заметку из хранилища браузера.");
+        }
+      }
+    });
     content.addEventListener("input", event => {
       const customChoice = event.target.closest(".checklist-other");
       if (!customChoice || event.target.type === "checkbox") return;
@@ -1840,6 +2235,7 @@
       updateProgress();
     });
     document.getElementById("exportButton").addEventListener("click", downloadMarkdown);
+    document.getElementById("archiveButton").addEventListener("click", downloadArchive);
     document.getElementById("printButton").addEventListener("click", () => {
       saveState();
       window.print();

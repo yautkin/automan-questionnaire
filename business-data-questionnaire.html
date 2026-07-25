@@ -1,0 +1,1859 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Данные для AI-консультанта автосервиса АКПП</title>
+  <style>
+    :root {
+      --ink: #17212b;
+      --muted: #65717d;
+      --navy: #14283c;
+      --navy-2: #1e3b55;
+      --accent: #e87532;
+      --accent-soft: #fff1e7;
+      --paper: #fffdf9;
+      --canvas: #f1f3f4;
+      --line: #dce1e4;
+      --success: #247a57;
+      --warning: #9b5b16;
+      --danger: #a83d38;
+      --shadow: 0 18px 50px rgba(23, 33, 43, 0.10);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top right, rgba(232, 117, 50, 0.10), transparent 28rem),
+        var(--canvas);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .shell {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 40px clamp(22px, 5vw, 72px) 38px;
+      color: white;
+      background:
+        linear-gradient(118deg, rgba(20, 40, 60, 0.98), rgba(30, 59, 85, 0.95)),
+        var(--navy);
+    }
+
+    .hero::after {
+      position: absolute;
+      right: -100px;
+      bottom: -190px;
+      width: 430px;
+      height: 430px;
+      border: 56px solid rgba(232, 117, 50, 0.18);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .eyebrow {
+      position: relative;
+      z-index: 1;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 18px;
+      color: #ffd6bd;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 28px;
+      height: 2px;
+      background: var(--accent);
+      content: "";
+    }
+
+    h1 {
+      position: relative;
+      z-index: 1;
+      max-width: 920px;
+      margin: 0;
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 1.04;
+      letter-spacing: -0.045em;
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 1;
+      max-width: 780px;
+      margin: 20px 0 0;
+      color: #d7e0e7;
+      font-size: clamp(16px, 2vw, 20px);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+      padding: 24px;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(220, 225, 228, 0.9);
+      border-radius: var(--radius);
+      background: rgba(255, 253, 249, 0.96);
+      box-shadow: var(--shadow);
+    }
+
+    .progress-panel {
+      padding: 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .progress-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .progress-track {
+      overflow: hidden;
+      height: 9px;
+      border-radius: 999px;
+      background: #e6eaec;
+    }
+
+    .progress-bar {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), #f1a065);
+      transition: width 220ms ease;
+    }
+
+    .autosave-note {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .tabs {
+      display: grid;
+      gap: 4px;
+      padding: 12px;
+    }
+
+    .tab {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      padding: 11px 12px;
+      border: 0;
+      border-radius: 11px;
+      color: var(--ink);
+      background: transparent;
+      text-align: left;
+      transition: background 150ms ease, color 150ms ease;
+    }
+
+    .tab:hover {
+      background: #f3f5f5;
+    }
+
+    .tab[aria-selected="true"] {
+      color: white;
+      background: var(--navy);
+    }
+
+    .tab-number {
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border-radius: 9px;
+      background: rgba(20, 40, 60, 0.08);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .tab[aria-selected="true"] .tab-number {
+      color: #ffd6bd;
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    .tab-label {
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.25;
+    }
+
+    .tab-count {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .tab[aria-selected="true"] .tab-count {
+      color: #c7d3dc;
+    }
+
+    .sidebar-actions {
+      display: grid;
+      gap: 8px;
+      padding: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .button {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 9px 14px;
+      border: 1px solid transparent;
+      border-radius: 11px;
+      font-size: 13px;
+      font-weight: 800;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+    }
+
+    .button-primary {
+      color: white;
+      background: var(--accent);
+      box-shadow: 0 8px 20px rgba(232, 117, 50, 0.24);
+    }
+
+    .button-secondary {
+      border-color: var(--line);
+      color: var(--ink);
+      background: white;
+    }
+
+    .button-danger {
+      color: var(--danger);
+      background: transparent;
+    }
+
+    .content {
+      min-width: 0;
+    }
+
+    .panel {
+      display: none;
+      animation: reveal 180ms ease;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    @keyframes reveal {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-heading {
+      display: flex;
+      gap: 20px;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin: 4px 0 18px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      color: var(--navy);
+      font-size: clamp(27px, 3vw, 39px);
+      line-height: 1.1;
+      letter-spacing: -0.035em;
+    }
+
+    .section-heading p {
+      max-width: 700px;
+      margin: 9px 0 0;
+      color: var(--muted);
+    }
+
+    .priority {
+      flex: 0 0 auto;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .priority-p0 {
+      color: #7a3511;
+      background: #ffe4d2;
+    }
+
+    .priority-p1 {
+      color: #1c6045;
+      background: #dff3e9;
+    }
+
+    .card {
+      margin-bottom: 16px;
+      padding: clamp(20px, 3vw, 30px);
+      border: 1px solid rgba(220, 225, 228, 0.95);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: 0 10px 30px rgba(23, 33, 43, 0.06);
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      color: var(--navy);
+      font-size: 20px;
+      letter-spacing: -0.02em;
+    }
+
+    .card-intro {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .steps {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding-left: 22px;
+      color: #000;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .steps li::marker {
+      color: var(--accent);
+      font-weight: 900;
+    }
+
+    .notice {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      align-items: start;
+      margin-bottom: 16px;
+      padding: 18px;
+      border: 1px solid #f1c8aa;
+      border-radius: 14px;
+      background: var(--accent-soft);
+    }
+
+    .notice-icon {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: 10px;
+      color: white;
+      background: var(--accent);
+      font-weight: 900;
+    }
+
+    .notice strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #733511;
+    }
+
+    .notice p {
+      margin: 0;
+      color: #75492f;
+      font-size: 14px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin: 18px 0;
+    }
+
+    .stat {
+      min-height: 126px;
+      padding: 20px;
+      border-radius: 16px;
+      color: white;
+      background: var(--navy);
+    }
+
+    .stat:nth-child(2) {
+      background: var(--accent);
+    }
+
+    .stat:nth-child(3) {
+      color: var(--navy);
+      background: #dce8ef;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 32px;
+      letter-spacing: -0.04em;
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 8px;
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
+    .question-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .question {
+      min-width: 0;
+    }
+
+    .question.full {
+      grid-column: 1 / -1;
+    }
+
+    .question label,
+    .field-label {
+      display: block;
+      margin-bottom: 7px;
+      color: #293640;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .required-label {
+      display: inline-block;
+      margin-left: 5px;
+      padding: 1px 5px;
+      border-radius: 5px;
+      color: #7a3511;
+      background: #ffe4d2;
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      vertical-align: 1px;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      border: 1px solid #cfd6da;
+      border-radius: 11px;
+      outline: none;
+      color: var(--ink);
+      background: white;
+      transition: border 150ms ease, box-shadow 150ms ease;
+    }
+
+    input[type="text"] {
+      height: 44px;
+      padding: 0 13px;
+    }
+
+    textarea {
+      min-height: 96px;
+      padding: 11px 13px;
+      resize: vertical;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(232, 117, 50, 0.12);
+    }
+
+    .hint {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .site-hint {
+      display: block;
+      margin-top: 6px;
+      color: #85501d;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    input.from-site,
+    textarea.from-site {
+      border-color: #e8b784;
+      background: #fff9f2;
+    }
+
+    .checklist {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 14px;
+      margin: 14px 0 20px;
+    }
+
+    .check {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 12px 13px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: white;
+    }
+
+    .check input {
+      width: 17px;
+      height: 17px;
+      margin: 2px 0 0;
+      accent-color: var(--accent);
+    }
+
+    .check span {
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .check.auto-check {
+      cursor: default;
+      background: #f8faf9;
+    }
+
+    .check.auto-check input:disabled {
+      cursor: default;
+      opacity: 1;
+    }
+
+    .auto-status {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .checklist-other {
+      display: grid;
+      grid-column: 1 / -1;
+      grid-template-columns: minmax(150px, 0.45fr) minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px dashed #cbd4d9;
+      border-radius: 11px;
+      background: #fbfcfc;
+    }
+
+    .checklist-other .check {
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      padding: 12px;
+      color: white;
+      background: var(--navy);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 8px;
+      border-top: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    td:first-child {
+      min-width: 180px;
+      font-weight: 750;
+    }
+
+    td input,
+    td textarea {
+      min-width: 145px;
+      border-color: transparent;
+      background: #f7f8f8;
+    }
+
+    td textarea {
+      min-height: 62px;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .tag-list li {
+      padding: 7px 10px;
+      border-radius: 999px;
+      color: var(--navy-2);
+      background: #e7eef2;
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .footer-note {
+      padding: 8px 24px 32px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      z-index: 20;
+      max-width: min(360px, calc(100vw - 44px));
+      padding: 13px 16px;
+      border-radius: 12px;
+      color: white;
+      background: var(--navy);
+      box-shadow: var(--shadow);
+      font-size: 13px;
+      font-weight: 750;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .toast.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 960px) {
+      .workspace {
+        grid-template-columns: 1fr;
+        padding: 16px;
+      }
+
+      .sidebar {
+        position: static;
+      }
+
+      .tabs {
+        display: flex;
+        overflow-x: auto;
+        padding-bottom: 14px;
+      }
+
+      .tab {
+        flex: 0 0 190px;
+      }
+
+      .sidebar-actions {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .button-danger {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .hero {
+        padding: 30px 20px;
+      }
+
+      .question-grid,
+      .checklist,
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .sidebar-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .button-danger {
+        grid-column: auto;
+      }
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .hero {
+        padding: 24px;
+        color: var(--ink);
+        background: white;
+        border-bottom: 3px solid var(--accent);
+      }
+
+      .hero h1 {
+        font-size: 32px;
+      }
+
+      .hero-copy {
+        color: var(--muted);
+      }
+
+      .eyebrow,
+      .sidebar,
+      .footer-note,
+      .toast {
+        display: none !important;
+      }
+
+      .workspace {
+        display: block;
+        padding: 0;
+      }
+
+      .panel {
+        display: block !important;
+        padding: 20px 0;
+        break-before: page;
+      }
+
+      .panel:first-child {
+        break-before: auto;
+      }
+
+      .card,
+      .notice {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+
+      input[type="text"],
+      textarea {
+        border-color: #aaa;
+        background: white;
+      }
+
+      .checklist {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="shell">
+      <div class="eyebrow">Рабочий опросник для руководителя</div>
+      <h1>Данные для запуска AI-консультанта Automan</h1>
+      <p class="hero-copy">
+        Заполните сведения о сервисе, ценах, наличии и правилах общения.
+        Система использует только подтверждённые данные и передаёт спорные
+        вопросы сотруднику.
+      </p>
+    </div>
+  </header>
+
+  <main class="shell workspace">
+    <aside class="sidebar" aria-label="Разделы документа">
+      <div class="progress-panel">
+        <div class="progress-row">
+          <span>Заполнение</span>
+          <span id="progressText">0%</span>
+        </div>
+        <div class="progress-track" aria-hidden="true">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <p class="autosave-note" id="saveStatus">
+          Ответы автоматически сохраняются только в этом браузере.
+        </p>
+      </div>
+      <nav class="tabs" id="tabs" role="tablist" aria-orientation="vertical"></nav>
+      <div class="sidebar-actions">
+        <button class="button button-primary" id="exportButton" type="button">
+          Скачать ответы .md
+        </button>
+        <button class="button button-secondary" id="printButton" type="button">
+          Печать / PDF
+        </button>
+        <button class="button button-danger" id="resetButton" type="button">
+          Очистить ответы
+        </button>
+      </div>
+    </aside>
+
+    <section class="content" id="content"></section>
+  </main>
+
+  <p class="footer-note">
+    Автономный документ: данные не отправляются в интернет и остаются в браузере
+    на этом устройстве.
+  </p>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const sections = [
+      {
+        id: "start",
+        nav: "Как заполнять",
+        title: "Перед началом",
+        subtitle: "Пройдите разделы слева — минимальный пакет отметится сам по мере заполнения.",
+        priority: "P0",
+        blocks: [
+          {
+            type: "steps",
+            title: "Короткая инструкция",
+            items: [
+              "Переходите по разделам в меню слева и заполните поля.",
+              "Когда закончите, нажмите «Скачать ответы .md».",
+              "Пришлите скачанный файл разработчику вместе с каталогом и прайс-листом, если они есть."
+            ]
+          },
+          {
+            type: "autoChecklist",
+            title: "Минимальный пакет для первого запуска",
+            items: [
+              ["contacts", "Контакты, адрес и график работы"],
+              ["services", "Перечень услуг и ограничения"],
+              ["prices", "Правила формирования цены"],
+              ["terms", "Условия гарантии и оплаты"],
+              ["inventory", "Первоначальный каталог коробок"],
+              ["buyback", "Правила выкупа неисправных коробок"],
+              ["dialogs", "10 успешных и 10 неудачных диалогов"],
+              ["faq", "20 частых вопросов с ответами"],
+              ["handoff", "Правила передачи обращения сотруднику"]
+            ]
+          }
+        ]
+      },
+      {
+        id: "service",
+        nav: "Сервис и услуги",
+        title: "Автосервис и направления работы",
+        subtitle: "Базовые сведения, которые консультант может уверенно сообщать каждому клиенту.",
+        priority: "P0",
+        blocks: [
+          {
+            type: "questions",
+            title: "Карточка автосервиса",
+            fields: [
+              ["service_public_name", "Название для сообщений клиентам", "text", true],
+              ["service_legal_name", "Полное или юридическое название", "text"],
+              ["service_address", "Адрес или адреса", "textarea", true],
+              ["service_regions", "Обслуживаемые города и регионы", "textarea", true],
+              ["service_phone", "Телефон для клиентов", "text", true],
+              ["service_contacts", "Другие способы связи", "textarea"],
+              ["service_schedule", "График работы", "textarea", true],
+              ["operator_schedule", "График ответов операторов в Avito", "textarea", true],
+              ["service_appointment", "Как устроена предварительная запись", "textarea"],
+              ["service_delivery", "Эвакуатор, доставка автомобиля и отправка коробок", "textarea"]
+            ]
+          },
+          {
+            type: "confirmation",
+            id: "site_service_verified",
+            label: "Проверил предварительно заполненные сведения Automan по сайту и при необходимости исправил их."
+          },
+          {
+            type: "checklist",
+            title: "Подтвердите направления работы",
+            items: [
+              "Ремонт АКПП с демонтажем и установкой",
+              "Диагностика АКПП",
+              "Ремонт DSG и вариаторов",
+              "Ремонт МКПП и РКПП",
+              "Ремонт КПП коммерческого транспорта",
+              "Покупка неисправных коробок",
+              "Продажа восстановленных коробок",
+              "Продажа б/у КПП",
+              "Продажа коробок с установкой",
+              "Продажа коробок без установки",
+              "Обмен восстановленной коробки на неисправную с доплатой",
+              "Работа с отдельно снятыми коробками"
+            ]
+          },
+          {
+            type: "questions",
+            title: "Ограничения",
+            fields: [
+              ["service_transmission_types", "Какие типы коробок ремонтируете", "textarea", true, "Классические АКПП, DSG/DCT, вариаторы, роботы."],
+              ["service_exclusions", "Какие автомобили или коробки не принимаете", "textarea", true],
+              ["service_not_provided", "Какие работы сервис не выполняет", "textarea"],
+              ["service_other", "Другие услуги и важные особенности", "textarea"]
+            ]
+          }
+        ]
+      },
+      {
+        id: "prices",
+        nav: "Цены и сроки",
+        title: "Прайс-лист и правила расчёта",
+        subtitle: "Не обязательно иметь фиксированную цену — важнее явно описать, что AI может и не может обещать.",
+        priority: "P0",
+        blocks: [
+          {
+            type: "notice",
+            title: "Если точной цены заранее нет",
+            body: "Подойдёт правило: «Окончательная стоимость определяется после диагностики и дефектовки». Отдельно укажите, может ли AI называть ориентировочный диапазон."
+          },
+          {
+            type: "priceTable",
+            title: "Основные услуги",
+            rows: [
+              "Диагностика",
+              "Снятие и установка коробки",
+              "Дефектовка",
+              "Ремонт АКПП",
+              "Ремонт гидроблока",
+              "Ремонт гидротрансформатора",
+              "Замена масла",
+              "Установка восстановленной коробки",
+              "Другая услуга"
+            ]
+          },
+          {
+            type: "questions",
+            title: "Коммерческие правила",
+            fields: [
+              ["price_rules", "От чего зависит окончательная стоимость", "textarea", true],
+              ["price_ai_allowed", "Какие цены или диапазоны AI может сообщать самостоятельно", "textarea", true],
+              ["price_handoff", "В каких случаях цену всегда подтверждает сотрудник", "textarea", true],
+              ["price_free_diagnostics", "Условия бесплатной или платной диагностики", "textarea"],
+              ["price_prepayment", "Минимальная стоимость и правила предоплаты", "textarea"],
+              ["price_allowed_phrases", "Разрешённые формулировки о цене", "textarea"],
+              ["price_forbidden_phrases", "Запрещённые формулировки и обещания", "textarea"],
+              ["price_file", "Файл или другой источник прайса", "text", false, "Например: prices.xlsx"],
+              ["price_version", "Версия и дата проверки прайса", "text", true],
+              ["price_approved_by", "Кто утвердил прайс", "text", true],
+              ["price_valid_until", "До какой даты цены считаются актуальными", "text", true]
+            ]
+          },
+          {
+            type: "confirmation",
+            id: "site_prices_verified",
+            label: "Проверил цены и правила, предварительно внесённые с сайта; разрешения AI указаны верно."
+          },
+          {
+            type: "questions",
+            title: "Сроки",
+            fields: [
+              ["process_repair", "Этапы ремонта от обращения до выдачи", "textarea", true],
+              ["timing_diagnostics", "Можно ли сообщать срок диагностики", "textarea", true],
+              ["timing_repair", "Можно ли сообщать срок ремонта", "textarea", true],
+              ["timing_factors", "От чего зависят сроки", "textarea"],
+              ["timing_operator", "Какой срок ответа оператора можно обещать", "textarea"]
+            ]
+          }
+        ]
+      },
+      {
+        id: "inventory",
+        nav: "Каталог и выкуп",
+        title: "Восстановленные и неисправные коробки",
+        subtitle: "Как проверять наличие, совместимость и принимать заявки на выкуп.",
+        priority: "P0",
+        blocks: [
+          {
+            type: "intro",
+            title: "Каталог лучше вести отдельной таблицей",
+            body: "Подготовьте inventory.xlsx или inventory.csv. Одна строка — одна позиция. Каталог должен иметь дату обновления и ответственного сотрудника."
+          },
+          {
+            type: "tagList",
+            title: "Обязательные столбцы каталога",
+            items: [
+              "ID позиции", "Код коробки", "OEM/артикул", "Производитель",
+              "Марка", "Модель", "Годы", "Двигатель", "Привод",
+              "Подтверждённая совместимость", "Состояние", "Комплектность",
+              "Цена", "Наличие", "Количество", "Место хранения",
+              "Сдача старой коробки", "Доплата без обмена", "Установка",
+              "Гарантия", "Доставка", "Дата обновления"
+            ]
+          },
+          {
+            type: "questions",
+            title: "Правила работы с каталогом",
+            fields: [
+              ["inventory_file", "Имя файла каталога", "text", true, "Например: inventory.xlsx"],
+              ["inventory_owner", "Кто отвечает за актуальность", "text", true],
+              ["inventory_frequency", "Как часто обновляется наличие", "text", true],
+              ["inventory_ai_stock", "Может ли AI подтверждать наличие", "textarea", true],
+              ["inventory_ai_compatibility", "Может ли AI подтверждать совместимость", "textarea", true],
+              ["inventory_vin", "Когда обязательно запрашивать VIN", "textarea", true],
+              ["inventory_version", "Версия и дата проверки каталога", "text", true],
+              ["inventory_valid_until", "Когда каталог считается устаревшим", "text", true]
+            ]
+          },
+          {
+            type: "questions",
+            title: "Правила выкупа неисправных коробок",
+            fields: [
+              ["buyback_types", "Какие коробки покупаете", "textarea", true],
+              ["buyback_exclusions", "Какие коробки не принимаете", "textarea", true],
+              ["buyback_completeness", "Требования к комплектности", "textarea", true],
+              ["buyback_photos", "Какие фотографии нужны", "textarea", true],
+              ["buyback_data", "Нужны ли VIN и данные автомобиля-донора", "textarea"],
+              ["buyback_valuation", "Как определяется цена выкупа", "textarea", true],
+              ["buyback_ai_range", "Может ли AI назвать предварительный диапазон", "textarea", true],
+              ["buyback_decision", "Кто подтверждает окончательную цену", "text", true],
+              ["buyback_regions", "География выкупа", "textarea"],
+              ["buyback_shipping", "Транспортная компания и оплата доставки", "textarea"],
+              ["buyback_documents", "Какие документы нужны для сделки", "textarea"]
+            ]
+          }
+        ]
+      },
+      {
+        id: "terms",
+        nav: "Гарантия и оплата",
+        title: "Гарантия, возврат и расчёты",
+        subtitle: "Условия, которые особенно важно не додумывать и не обещать без подтверждения.",
+        priority: "P0",
+        blocks: [
+          {
+            type: "questions",
+            title: "Гарантия",
+            fields: [
+              ["warranty_repair", "Гарантия на ремонт", "textarea", true],
+              ["warranty_unit", "Гарантия на восстановленную коробку", "textarea", true],
+              ["warranty_start", "С какого момента начинается гарантия", "textarea"],
+              ["warranty_coverage", "Что покрывает гарантия", "textarea", true],
+              ["warranty_exclusions", "Что гарантия не покрывает", "textarea", true],
+              ["warranty_installation", "Обязательна ли установка у вас", "textarea"],
+              ["warranty_claim", "Порядок гарантийного обращения", "textarea", true],
+              ["warranty_source", "Файл или документ — источник условий", "text", true],
+              ["warranty_version", "Версия и дата проверки условий", "text", true],
+              ["warranty_approved_by", "Кто утвердил условия", "text", true],
+              ["warranty_valid_until", "До какой даты условия актуальны", "text", true]
+            ]
+          },
+          {
+            type: "confirmation",
+            id: "site_terms_verified",
+            label: "Проверил предварительно заполненные сведения о гарантии и при необходимости исправил их."
+          },
+          {
+            type: "questions",
+            title: "Возврат и спорные случаи",
+            fields: [
+              ["return_unit", "Условия возврата коробки", "textarea", true],
+              ["return_money", "Условия возврата денег", "textarea", true],
+              ["return_owner", "Кто принимает решение по спорным обращениям", "text", true],
+              ["return_client_message", "Что AI должен сообщить клиенту при претензии", "textarea"]
+            ]
+          },
+          {
+            type: "questions",
+            title: "Оплата",
+            fields: [
+              ["payment_methods", "Разрешённые способы оплаты", "textarea", true],
+              ["payment_prepayment", "Когда нужна предоплата", "textarea"],
+              ["payment_ai_scope", "Что AI может говорить об оплате", "textarea", true],
+              ["payment_requisites", "Кто и как передаёт платёжные реквизиты", "textarea", true]
+            ]
+          }
+        ]
+      },
+      {
+        id: "clients",
+        nav: "Клиенты и примеры",
+        title: "Данные клиента, FAQ и диалоги",
+        subtitle: "Материалы, из которых система поймёт правильную последовательность вопросов и стиль консультации.",
+        priority: "P1",
+        blocks: [
+          {
+            type: "questions",
+            title: "Обязательные сведения для ремонта",
+            fields: [
+              ["repair_required", "Какие данные обязательны", "textarea", true, "Марка, модель, год, VIN, двигатель, привод, код коробки, симптомы, мобильность, диагностика, город, телефон."],
+              ["repair_optional", "Какие данные можно запросить позднее", "textarea"],
+              ["repair_refusal", "Что делать, если клиент не знает VIN или код коробки", "textarea"]
+            ]
+          },
+          {
+            type: "questions",
+            title: "Обязательные сведения для выкупа и продажи",
+            fields: [
+              ["sell_required", "Что собрать при продаже неисправной коробки сервису", "textarea", true],
+              ["buy_required", "Что собрать при покупке восстановленной коробки", "textarea", true],
+              ["client_phone_policy", "Когда разрешено запрашивать телефон", "textarea"],
+              ["client_sensitive_policy", "Какие данные нельзя запрашивать в чате", "textarea"]
+            ]
+          },
+          {
+            type: "questions",
+            title: "Частые вопросы",
+            fields: [
+              ["faq_price", "Как правильно отвечать на вопрос о цене", "textarea", true],
+              ["faq_drive", "Как отвечать на вопрос «Можно ли ехать своим ходом?»", "textarea", true],
+              ["faq_vin", "Как объяснять, зачем нужен VIN", "textarea"],
+              ["faq_stock", "Как отвечать о наличии", "textarea"],
+              ["faq_compatibility", "Как отвечать о совместимости", "textarea"],
+              ["faq_warranty", "Как отвечать о гарантии", "textarea"],
+              ["faq_other", "Другие частые вопросы и утверждённые ответы", "textarea"],
+              ["faq_count", "Сколько утверждённых FAQ приложено", "text", true, "Для минимального пакета нужно не менее 20."],
+              ["faq_file", "Файл или другой источник FAQ", "text", false, "Например: faq.xlsx"],
+              ["faq_version", "Версия и дата проверки FAQ", "text", true],
+              ["faq_approved_by", "Кто утвердил ответы", "text", true],
+              ["faq_valid_until", "До какой даты ответы актуальны", "text", true]
+            ]
+          },
+          {
+            type: "questions",
+            title: "Примеры диалогов",
+            fields: [
+              ["dialogs_good", "Сколько успешных обезличенных диалогов приложено", "text", true],
+              ["dialogs_bad", "Сколько неудачных обезличенных диалогов приложено", "text", true],
+              ["dialogs_files", "Имена файлов", "textarea", true],
+              ["dialogs_success", "Что считается успешным завершением диалога", "textarea"],
+              ["dialogs_mistakes", "Какие ошибки сотрудников или AI критичны", "textarea"],
+              ["dialogs_notes", "Комментарии к примерам и правильные варианты ответов", "textarea"]
+            ]
+          }
+        ]
+      },
+      {
+        id: "communication",
+        nav: "Общение и передача",
+        title: "Стиль общения и подключение сотрудника",
+        subtitle: "Как должен звучать консультант и в какой момент он обязан остановиться.",
+        priority: "P0",
+        blocks: [
+          {
+            type: "questions",
+            title: "Голос автосервиса",
+            fields: [
+              ["tone_intro", "Как AI должен представляться", "textarea", true],
+              ["tone_disclosure", "Нужно ли сообщать, что это виртуальный консультант", "textarea", true],
+              ["tone_address", "Обращение на «вы» или на «ты»", "text", true],
+              ["tone_emoji", "Допустимы ли эмодзи", "text"],
+              ["tone_length", "Предпочтительная длина сообщения", "text"],
+              ["tone_jargon", "Допустим ли технический жаргон", "textarea"],
+              ["tone_good", "Примеры хороших формулировок", "textarea", true],
+              ["tone_forbidden", "Запрещённые слова и обещания", "textarea", true],
+              ["tone_angry", "Как отвечать раздражённому клиенту", "textarea"],
+              ["tone_close", "Как завершать диалог", "textarea"]
+            ]
+          },
+          {
+            type: "questions",
+            title: "Передача сотруднику",
+            fields: [
+              ["handoff_owner", "Кто принимает переданные обращения", "text", true],
+              ["handoff_hours", "В какие часы сотрудник доступен", "textarea", true],
+              ["handoff_promise", "Какой срок ответа разрешено обещать", "textarea", true],
+              ["handoff_offhours", "Что сообщать ночью и в выходные", "textarea", true],
+              ["handoff_immediate", "Какие обращения передавать немедленно", "textarea", true],
+              ["handoff_price", "Что делать с вопросом о цене", "textarea"],
+              ["handoff_compatibility", "Что делать с вопросом о совместимости", "textarea"],
+              ["handoff_claim", "Что делать с претензией или повторной неисправностью", "textarea", true],
+              ["handoff_safety", "Что делать при течи, дыме, запахе гари или потере управления", "textarea", true],
+              ["handoff_summary", "Какие сведения подготовить сотруднику", "textarea", true]
+            ]
+          }
+        ]
+      },
+      {
+        id: "launch",
+        nav: "Контроль и запуск",
+        title: "Контроль качества, данные и рабочий запуск",
+        subtitle: "Кто поддерживает знания в актуальном состоянии и как безопасно перейти от тестов к работе.",
+        priority: "P1",
+        blocks: [
+          {
+            type: "questions",
+            title: "Ответственные",
+            fields: [
+              ["quality_ai_reviewer", "Кто проверяет ответы AI во время пилота", "text", true],
+              ["quality_frequency", "Как часто разбираются ошибки", "text", true],
+              ["quality_knowledge_owner", "Кто утверждает изменения базы знаний", "text", true],
+              ["quality_prices_owner", "Кто обновляет цены", "text", true],
+              ["quality_inventory_owner", "Кто обновляет остатки", "text", true],
+              ["quality_critical", "Какие ошибки считаются критическими", "textarea", true],
+              ["quality_stale_data", "Что делать, если срок актуальности данных истёк", "textarea", true, "Рекомендуется запретить AI подтверждать такие сведения и передать вопрос сотруднику."]
+            ]
+          },
+          {
+            type: "questions",
+            title: "Переход к автоматическим ответам",
+            fields: [
+              ["launch_draft_period", "Сколько работаем в режиме черновиков", "textarea", true],
+              ["launch_auto_criteria", "При каких условиях разрешаем автоотправку", "textarea", true],
+              ["launch_stop", "Кто и как останавливает AI при ошибке", "textarea", true],
+              ["launch_device", "На каком постоянно включённом устройстве работает система", "textarea"],
+              ["launch_backup", "Как резервируется база", "textarea"]
+            ]
+          },
+          {
+            type: "questions",
+            title: "Хранение клиентских данных",
+            fields: [
+              ["privacy_messages", "Срок хранения сообщений", "text", true],
+              ["privacy_files", "Срок хранения фотографий и файлов", "text", true],
+              ["privacy_access", "Кто имеет доступ", "textarea", true],
+              ["privacy_delete", "Когда и как удалять данные", "textarea", true],
+              ["privacy_archive", "Нужно ли хранить закрытые диалоги для контроля качества", "textarea"],
+              ["privacy_internal", "Внутренние требования по персональным данным", "textarea"]
+            ]
+          },
+          {
+            type: "checklist",
+            title: "Готовность к реальному запуску",
+            items: [
+              "Аккаунт Avito имеет доступ к Messenger API",
+              "Назначен оператор",
+              "Назначен ответственный за цены и каталог",
+              "Есть постоянно включённое устройство и стабильный интернет",
+              "Настроено резервное копирование",
+              "Утверждён срок хранения данных",
+              "Пройден период работы в режиме черновиков",
+              "Пройдены контрольные диалоги",
+              "Есть процедура немедленной остановки AI"
+            ]
+          }
+        ]
+      }
+    ];
+
+    const storageKey = "transmission-assistant-director-questionnaire-v1";
+    const content = document.getElementById("content");
+    const tabs = document.getElementById("tabs");
+    const progressText = document.getElementById("progressText");
+    const progressBar = document.getElementById("progressBar");
+    const saveStatus = document.getElementById("saveStatus");
+    const toast = document.getElementById("toast");
+    let saveTimer;
+
+    const packageRules = {
+      contacts: () => fieldsComplete(["service_public_name", "service_address", "service_phone", "service_schedule", "site_service_verified"]),
+      services: () => anyCheckedInSection("service") && fieldsComplete(["service_transmission_types", "service_exclusions", "site_service_verified"]),
+      prices: () => hasPrice() && fieldsComplete(["price_rules", "price_ai_allowed", "price_handoff", "site_prices_verified"]),
+      terms: () => fieldsComplete([
+        "warranty_repair", "warranty_coverage", "warranty_exclusions", "warranty_claim", "site_terms_verified",
+        "payment_methods", "payment_ai_scope", "payment_requisites"
+      ]),
+      inventory: () => fieldsComplete([
+        "inventory_file", "inventory_owner", "inventory_frequency", "inventory_ai_stock",
+        "inventory_ai_compatibility", "inventory_vin", "inventory_version", "inventory_valid_until"
+      ]),
+      buyback: () => fieldsComplete([
+        "buyback_types", "buyback_exclusions", "buyback_completeness", "buyback_photos",
+        "buyback_valuation", "buyback_ai_range", "buyback_decision"
+      ]),
+      dialogs: () => numericAtLeast("dialogs_good", 10) && numericAtLeast("dialogs_bad", 10) && fieldsComplete(["dialogs_files"]),
+      faq: () => numericAtLeast("faq_count", 20) && (fieldsComplete(["faq_file"]) || fieldsComplete(["faq_other"])),
+      handoff: () => fieldsComplete([
+        "handoff_owner", "handoff_hours", "handoff_promise", "handoff_offhours",
+        "handoff_immediate", "handoff_claim", "handoff_safety", "handoff_summary"
+      ])
+    };
+
+    const websitePrefill = {
+      service_public_name: "Автоман",
+      service_legal_name: "ИП СОЛОВЬЕВ АНДРЕЙ АНАТОЛЬЕВИЧ",
+      service_address: "г. Тула, ул. Станиславского, д. 4А",
+      service_regions: "Тула",
+      service_phone: "8 (902) 900-00-09",
+      service_contacts: "E-mail: office@avto-man.ru",
+      service_schedule: "Ежедневно, 09:00–22:00",
+      service_appointment: "На сайте доступны заявка и заказ обратного звонка — подтвердите рабочий порядок записи.",
+      service_delivery: "На сайте упоминается эвакуатор при ремонте КПП — подтвердите условия.",
+      service_transmission_types: "По сайту: АКПП, DSG, вариаторы, МКПП, РКПП, КПП коммерческого транспорта. Подтвердите, что все направления входят в контур AI-консультанта.",
+      service_other: "По сайту: собственный склад автозапчастей; опыт ремонтных работ более 10 лет.",
+      price_rules: "По сайту: стоимость ремонта или замены уточняется у менеджеров и зависит от типа КПП и выявленного дефекта. Подтвердите правило для AI.",
+      price_ai_allowed: "До утверждения руководителем AI не называет цены и передаёт запрос менеджеру.",
+      price_handoff: "Итоговую стоимость ремонта или замены подтверждает менеджер.",
+      price_free_diagnostics: "По сайту: определение работоспособности в рабочих режимах — бесплатно; электронная диагностика — 1 500 ₽; расширенная диагностика — 1 500–3 000 ₽. Подтвердите условия.",
+      price_file: "https://kpp.avto-man.ru/tseny/",
+      price_version: "Проверено по сайту 26.07.2026 — требуется утверждение",
+      warranty_repair: "По сайту: гарантия на все выполненные работы; в заголовке раздела КПП указана гарантия 1 год. Подтвердите точный срок и условия.",
+      warranty_coverage: "По сайту: на выполненные работы предоставляется гарантия.",
+      warranty_claim: "Порядок гарантийного обращения подтверждает менеджер; до утверждения AI передаёт вопрос сотруднику.",
+      warranty_source: "https://kpp.avto-man.ru/garantiya/",
+      warranty_version: "Проверено по сайту 26.07.2026 — требуется утверждение",
+      faq_price: "По сайту: стоимость ремонта или замены уточняется у менеджеров. До утверждения правил AI передаёт вопрос сотруднику.",
+      faq_stock: "На сайте есть раздел продажи б/у КПП, но актуальное наличие AI подтверждает только по каталогу.",
+      faq_warranty: "На сайте заявлена гарантия на выполненные работы; точные условия подтверждает сотрудник.",
+      faq_file: "https://kpp.avto-man.ru/faq/",
+      faq_version: "Проверено по сайту 26.07.2026 — требуется утверждение"
+    };
+
+    const websiteCheckboxes = [
+      "Ремонт АКПП с демонтажем и установкой",
+      "Диагностика АКПП",
+      "Ремонт DSG и вариаторов",
+      "Ремонт МКПП и РКПП",
+      "Ремонт КПП коммерческого транспорта",
+      "Продажа б/у КПП"
+    ];
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function getField(id) {
+      return document.getElementById(id);
+    }
+
+    function fieldsComplete(ids) {
+      return ids.every(id => {
+        const field = getField(id);
+        return field && isComplete(field);
+      });
+    }
+
+    function numericAtLeast(id, minimum) {
+      const field = getField(id);
+      return Boolean(field) && Number.parseInt(field.value, 10) >= minimum;
+    }
+
+    function anyCheckedInSection(sectionId) {
+      return [...document.querySelectorAll(`input[type="checkbox"][data-choice-option][data-section="${sectionId}"]`)]
+        .some(input => input.checked);
+    }
+
+    function hasPrice() {
+      return [...document.querySelectorAll('[id^="price_row_"][id$="_value"]')]
+        .some(field => field.value.trim().length > 0);
+    }
+
+    function updateAutoChecklist() {
+      document.querySelectorAll("[data-auto-check]").forEach(input => {
+        const key = input.dataset.packageKey;
+        const complete = Boolean(packageRules[key]?.());
+        input.checked = complete;
+        const status = document.querySelector(`[data-auto-status="${key}"]`);
+        if (status) status.textContent = complete ? "Готово" : "Нужны связанные поля";
+      });
+    }
+
+    function markAsWebsitePrefill(field) {
+      field.classList.add("from-site");
+      field.title = "Заполнено по сайту Automan — проверьте и при необходимости исправьте.";
+      const question = field.closest(".question");
+      if (question && !question.querySelector(".site-hint")) {
+        question.insertAdjacentHTML(
+          "beforeend",
+          '<span class="site-hint">Заполнено по сайту Automan — проверьте актуальность.</span>'
+        );
+      }
+    }
+
+    function applyWebsitePrefill() {
+      const savedState = readState();
+      const isLegacyBlank = id => !savedState.__automanPrefillV1
+        && Object.prototype.hasOwnProperty.call(savedState, id)
+        && !String(savedState[id] ?? "").trim();
+      const shouldApply = id => !Object.prototype.hasOwnProperty.call(savedState, id) || isLegacyBlank(id);
+      Object.entries(websitePrefill).forEach(([id, value]) => {
+        const field = getField(id);
+        if (!field || !shouldApply(id)) return;
+        field.value = value;
+        markAsWebsitePrefill(field);
+      });
+
+      const sitePrices = {
+        price_row_0_value: "По сайту: электронная диагностика — 1 500 ₽; расширенная — 1 500–3 000 ₽.",
+        price_row_1_value: "По сайту: от 6 000 до 12 000 ₽.",
+        price_row_3_value: "По сайту: переборка без автомобиля — 19 800 ₽; срок 3–5 рабочих дней.",
+        price_row_4_value: "По сайту: от 5 000 ₽.",
+        price_row_6_value: "По сайту: 1 980 ₽."
+      };
+      Object.entries(sitePrices).forEach(([id, value]) => {
+        const field = getField(id);
+        if (!field || !shouldApply(id)) return;
+        field.value = value;
+        markAsWebsitePrefill(field);
+      });
+
+      websiteCheckboxes.forEach(question => {
+        const field = [...document.querySelectorAll('input[type="checkbox"][data-question]')]
+          .find(input => input.dataset.question === question);
+        const legacyUnchecked = !savedState.__automanPrefillV1
+          && Object.prototype.hasOwnProperty.call(savedState, field?.id)
+          && !savedState[field.id];
+        if (field && (!Object.prototype.hasOwnProperty.call(savedState, field.id) || legacyUnchecked)) {
+          field.checked = true;
+          field.classList.add("from-site");
+          field.title = "Отмечено по сайту Automan — проверьте актуальность.";
+        }
+      });
+    }
+
+    function fieldMarkup(section, field) {
+      const [id, label, kind, required = false, hint = ""] = field;
+      const requiredAttributes = required
+        ? 'data-required="true" aria-required="true"'
+        : "";
+      const element = kind === "textarea"
+        ? `<textarea id="${id}" data-field data-section="${section.id}" data-question="${escapeHtml(label)}" ${requiredAttributes}></textarea>`
+        : `<input id="${id}" type="text" data-field data-section="${section.id}" data-question="${escapeHtml(label)}" ${requiredAttributes}>`;
+      return `
+        <div class="question ${kind === "textarea" ? "full" : ""}">
+          <label for="${id}">
+            ${escapeHtml(label)}${required ? ' <span class="required-label">важное поле</span>' : ""}
+          </label>
+          ${element}
+          ${hint ? `<span class="hint">${escapeHtml(hint)}</span>` : ""}
+        </div>`;
+    }
+
+    function blockMarkup(section, block, index) {
+      if (block.type === "intro") {
+        return `<article class="card"><h3>${escapeHtml(block.title)}</h3><p class="card-intro">${escapeHtml(block.body)}</p></article>`;
+      }
+
+      if (block.type === "steps") {
+        return `
+          <article class="card">
+            <h3>${escapeHtml(block.title)}</h3>
+            <ol class="steps">${block.items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ol>
+          </article>`;
+      }
+
+      if (block.type === "notice") {
+        return `
+          <div class="notice">
+            <div class="notice-icon">!</div>
+            <div><strong>${escapeHtml(block.title)}</strong><p>${escapeHtml(block.body)}</p></div>
+          </div>`;
+      }
+
+      if (block.type === "stats") {
+        return `
+          <div class="stats">
+            <div class="stat"><strong>8</strong><span>тематических разделов без сплошного длинного полотна</span></div>
+            <div class="stat"><strong>P0</strong><span>данные, необходимые для первого полноценного запуска</span></div>
+            <div class="stat"><strong>P1</strong><span>материалы, которые улучшают качество во время пилота</span></div>
+          </div>`;
+      }
+
+      if (block.type === "questions") {
+        return `
+          <article class="card">
+            <h3>${escapeHtml(block.title)}</h3>
+            <div class="question-grid">
+              ${block.fields.map(field => fieldMarkup(section, field)).join("")}
+            </div>
+          </article>`;
+      }
+
+      if (block.type === "confirmation") {
+        return `
+          <article class="card">
+            <div class="checklist">
+              <label class="check" for="${block.id}">
+                <input id="${block.id}" type="checkbox" data-field data-section="${section.id}" data-question="${escapeHtml(block.label)}">
+                <span>${escapeHtml(block.label)}</span>
+              </label>
+            </div>
+          </article>`;
+      }
+
+      if (block.type === "checklist") {
+        const otherId = `${section.id}_other_${index}`;
+        return `
+          <article class="card">
+            <h3>${escapeHtml(block.title)}</h3>
+            <div class="checklist">
+              ${block.items.map((item, itemIndex) => {
+                const id = `${section.id}_check_${index}_${itemIndex}`;
+                return `
+                  <label class="check" for="${id}">
+                    <input id="${id}" type="checkbox" data-field data-choice-option data-section="${section.id}" data-question="${escapeHtml(item)}">
+                    <span>${escapeHtml(item)}</span>
+                  </label>`;
+              }).join("")}
+              <div class="checklist-other">
+                <label class="check" for="${otherId}_check">
+                  <input id="${otherId}_check" type="checkbox" data-field data-choice-option data-section="${section.id}" data-question="Свой вариант — ${escapeHtml(block.title)}">
+                  <span>Свой вариант</span>
+                </label>
+                <input id="${otherId}" type="text" data-field data-section="${section.id}" data-question="Свой вариант — ${escapeHtml(block.title)}" placeholder="Введите свой вариант; можно несколько через запятую">
+              </div>
+            </div>
+          </article>`;
+      }
+
+      if (block.type === "autoChecklist") {
+        return `
+          <article class="card">
+            <h3>${escapeHtml(block.title)}</h3>
+            <p class="card-intro">Галочки ставятся автоматически, когда заполнены связанные разделы.</p>
+            <div class="checklist">
+              ${block.items.map(([key, label]) => {
+                const id = `package_${key}`;
+                return `
+                  <label class="check auto-check" for="${id}">
+                    <input id="${id}" type="checkbox" data-auto-check data-package-key="${key}" tabindex="-1" disabled>
+                    <span>${escapeHtml(label)}<small class="auto-status" data-auto-status="${key}">Не заполнено</small></span>
+                  </label>`;
+              }).join("")}
+            </div>
+          </article>`;
+      }
+
+      if (block.type === "tagList") {
+        return `
+          <article class="card">
+            <h3>${escapeHtml(block.title)}</h3>
+            <ul class="tag-list">${block.items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+          </article>`;
+      }
+
+      if (block.type === "priceTable") {
+        return `
+          <article class="card">
+            <h3>${escapeHtml(block.title)}</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Услуга</th>
+                    <th>Цена / диапазон</th>
+                    <th>Что входит и от чего зависит</th>
+                    <th>Можно ли сообщать AI</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${block.rows.map((row, rowIndex) => {
+                    const prefix = `price_row_${rowIndex}`;
+                    return `
+                      <tr>
+                        <td>${escapeHtml(row)}</td>
+                        <td><input type="text" data-field data-section="${section.id}" data-question="${escapeHtml(row)} — цена" id="${prefix}_value"></td>
+                        <td><textarea data-field data-section="${section.id}" data-question="${escapeHtml(row)} — условия" id="${prefix}_details"></textarea></td>
+                        <td><input type="text" data-field data-section="${section.id}" data-question="${escapeHtml(row)} — разрешение AI" id="${prefix}_ai" placeholder="Да / Нет / По правилам"></td>
+                      </tr>`;
+                  }).join("")}
+                </tbody>
+              </table>
+            </div>
+          </article>`;
+      }
+
+      return "";
+    }
+
+    function render() {
+      tabs.innerHTML = sections.map((section, index) => `
+        <button
+          class="tab"
+          id="tab-${section.id}"
+          type="button"
+          role="tab"
+          aria-selected="${index === 0}"
+          aria-controls="panel-${section.id}"
+          tabindex="${index === 0 ? 0 : -1}"
+          data-tab="${section.id}">
+          <span class="tab-number">${index + 1}</span>
+          <span class="tab-label">${escapeHtml(section.nav)}</span>
+          <span class="tab-count" id="count-${section.id}">0/0</span>
+        </button>`).join("");
+
+      content.innerHTML = sections.map((section, index) => `
+        <section
+          class="panel ${index === 0 ? "active" : ""}"
+          id="panel-${section.id}"
+          role="tabpanel"
+          aria-labelledby="tab-${section.id}"
+          ${index === 0 ? "" : "hidden"}>
+          <div class="section-heading">
+            <div>
+              <h2>${escapeHtml(section.title)}</h2>
+              <p>${escapeHtml(section.subtitle)}</p>
+            </div>
+            <span class="priority priority-${section.priority.toLowerCase()}">${section.priority}</span>
+          </div>
+          ${section.blocks.map((block, blockIndex) => blockMarkup(section, block, blockIndex)).join("")}
+        </section>`).join("");
+    }
+
+    function activateTab(id, focus = false) {
+      document.querySelectorAll(".tab").forEach(tab => {
+        const active = tab.dataset.tab === id;
+        tab.setAttribute("aria-selected", String(active));
+        tab.tabIndex = active ? 0 : -1;
+        if (active && focus) tab.focus();
+      });
+
+      document.querySelectorAll(".panel").forEach(panel => {
+        const active = panel.id === `panel-${id}`;
+        panel.classList.toggle("active", active);
+        panel.hidden = !active;
+      });
+
+      window.scrollTo({ top: document.querySelector(".workspace").offsetTop - 10, behavior: "smooth" });
+    }
+
+    function readState() {
+      try {
+        return JSON.parse(localStorage.getItem(storageKey) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function restoreState() {
+      const state = readState();
+      document.querySelectorAll("[data-field]").forEach(field => {
+        if (!(field.id in state)) return;
+        if (field.type === "checkbox") {
+          field.checked = Boolean(state[field.id]);
+        } else {
+          field.value = state[field.id];
+        }
+      });
+      updateProgress();
+    }
+
+    function collectState() {
+      const state = {};
+      document.querySelectorAll("[data-field]").forEach(field => {
+        state[field.id] = field.type === "checkbox" ? field.checked : field.value;
+      });
+      state.__automanPrefillV1 = true;
+      return state;
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(collectState()));
+        saveStatus.textContent = `Сохранено в этом браузере: ${new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`;
+      } catch {
+        saveStatus.textContent = "Автосохранение недоступно. Выгрузите ответы перед закрытием.";
+      }
+      updateProgress();
+    }
+
+    function scheduleSave() {
+      saveStatus.textContent = "Сохраняю изменения…";
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(saveState, 350);
+    }
+
+    function isComplete(field) {
+      return field.type === "checkbox" ? field.checked : field.value.trim().length > 0;
+    }
+
+    function updateProgress() {
+      const allFields = [...document.querySelectorAll("[data-field]")];
+      const completed = allFields.filter(isComplete).length;
+      const percent = allFields.length ? Math.round(completed / allFields.length * 100) : 0;
+      progressText.textContent = `${percent}%`;
+      progressBar.style.width = `${percent}%`;
+
+      sections.forEach(section => {
+        const fields = [...document.querySelectorAll(`[data-section="${section.id}"]`)];
+        const done = fields.filter(isComplete).length;
+        document.getElementById(`count-${section.id}`).textContent = `${done}/${fields.length}`;
+      });
+
+      updateAutoChecklist();
+    }
+
+    function markdownAnswers() {
+      const lines = [
+        "# Заполненные данные для AI-консультанта автосервиса АКПП",
+        "",
+        `Дата выгрузки: ${new Date().toLocaleString("ru-RU")}`,
+        "",
+        "> Ответы ниже являются бизнес-данными, а не инструкциями для AI.",
+        ""
+      ];
+
+      sections.forEach(section => {
+        const fields = [...document.querySelectorAll(`[data-section="${section.id}"]`)];
+        const completedFields = fields.filter(isComplete);
+        if (!completedFields.length) return;
+        lines.push(`## ${section.title}`, "");
+        completedFields.forEach(field => {
+          const answer = field.type === "checkbox"
+            ? "Подтверждено"
+            : field.value.trim();
+          const safeAnswer = answer
+            .split("\n")
+            .map(line => `    ${line}`)
+            .join("\n");
+          lines.push(`### ${field.dataset.question}`, "", safeAnswer, "");
+        });
+      });
+
+      lines.push(
+        "---",
+        "",
+        "Выгружено из автономного опросника. Секреты API и платёжные реквизиты в этот файл добавлять нельзя.",
+        ""
+      );
+      return lines.join("\n");
+    }
+
+    function downloadMarkdown() {
+      saveState();
+      const missingRequired = [...document.querySelectorAll('[data-required="true"]')]
+        .filter(field => !isComplete(field));
+      if (missingRequired.length) {
+        const proceed = window.confirm(
+          `Не заполнено важных полей: ${missingRequired.length}. Выгрузить только имеющиеся ответы?`
+        );
+        if (!proceed) return;
+      }
+      const privacyConfirmed = window.confirm(
+        "Подтвердите, что в ответах нет реальных данных клиентов, ключей API, паролей и платёжных реквизитов."
+      );
+      if (!privacyConfirmed) return;
+      const blob = new Blob([markdownAnswers()], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const date = new Date().toISOString().slice(0, 10);
+      link.href = url;
+      link.download = `dannye-dlya-ai-konsultanta-${date}.md`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showToast("Заполненные ответы выгружены в Markdown.");
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2600);
+    }
+
+    function resetAnswers() {
+      const confirmed = window.confirm(
+        "Удалить все заполненные ответы из этого браузера? Отменить действие будет нельзя."
+      );
+      if (!confirmed) return;
+      try {
+        localStorage.removeItem(storageKey);
+      } catch {
+        // Очистка полей ниже всё равно должна продолжиться.
+      }
+      document.querySelectorAll("[data-field]").forEach(field => {
+        if (field.type === "checkbox") field.checked = false;
+        else field.value = "";
+      });
+      saveStatus.textContent = "Ответы очищены.";
+      updateProgress();
+      showToast("Все ответы удалены.");
+    }
+
+    render();
+    restoreState();
+    applyWebsitePrefill();
+    updateProgress();
+
+    tabs.addEventListener("click", event => {
+      const tab = event.target.closest("[data-tab]");
+      if (tab) activateTab(tab.dataset.tab);
+    });
+
+    tabs.addEventListener("keydown", event => {
+      const tabButtons = [...document.querySelectorAll(".tab")];
+      const currentIndex = tabButtons.indexOf(document.activeElement);
+      if (currentIndex < 0) return;
+      let nextIndex;
+      if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+        nextIndex = (currentIndex + 1) % tabButtons.length;
+      } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+        nextIndex = (currentIndex - 1 + tabButtons.length) % tabButtons.length;
+      } else if (event.key === "Home") {
+        nextIndex = 0;
+      } else if (event.key === "End") {
+        nextIndex = tabButtons.length - 1;
+      } else {
+        return;
+      }
+      event.preventDefault();
+      activateTab(tabButtons[nextIndex].dataset.tab, true);
+    });
+
+    content.addEventListener("input", scheduleSave);
+    content.addEventListener("change", scheduleSave);
+    content.addEventListener("input", event => {
+      const customChoice = event.target.closest(".checklist-other");
+      if (!customChoice || event.target.type === "checkbox") return;
+      const checkbox = customChoice.querySelector('input[type="checkbox"]');
+      if (checkbox) checkbox.checked = event.target.value.trim().length > 0;
+      updateProgress();
+    });
+    document.getElementById("exportButton").addEventListener("click", downloadMarkdown);
+    document.getElementById("printButton").addEventListener("click", () => {
+      saveState();
+      window.print();
+    });
+    document.getElementById("resetButton").addEventListener("click", resetAnswers);
+
+    function updateTabOrientation() {
+      tabs.setAttribute("aria-orientation", window.matchMedia("(max-width: 960px)").matches
+        ? "horizontal"
+        : "vertical");
+    }
+
+    updateTabOrientation();
+    window.addEventListener("resize", updateTabOrientation);
+  </script>
+</body>
+</html>
